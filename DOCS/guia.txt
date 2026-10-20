@@ -1,0 +1,6 @@
+Roteiro de apresentaco 
+
+DMZ: zona delimitadora e uma rede responsavel por expor servicos para redes nao seguras ela e um adicional de seguranca a rede lan
+Ngix: Utilizei o Ngix para ser o dmz, ngix e um servidor http flexivel e com alta performace
+
+Arquvio de conf: /etc/nginx/nginx.conf
