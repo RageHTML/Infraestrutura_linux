@@ -4,3 +4,12 @@ DMZ: zona delimitadora e uma rede responsavel por expor servicos para redes nao 
 Ngix: Utilizei o Ngix para ser o dmz, ngix e um servidor http flexivel e com alta performace
 
 Arquvio de conf: /etc/nginx/nginx.conf
+Configurar o ip do nginx
+sudo nginx -s -reload 
+
+ip nginx 10.1.1.10 - 0 e reservado para o gatway
+
+Configurei o ip estatico via netplan
+sudo systemctl enable --now systemd-networkd
+sudo mkdir -p /etc/netplan
+sudo nano /etc/netplan/99-dmz.yaml
