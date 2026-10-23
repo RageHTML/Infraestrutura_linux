@@ -7,9 +7,13 @@ Arquvio de conf: /etc/nginx/nginx.conf
 Configurar o ip do nginx
 sudo nginx -s -reload 
 
-ip nginx 10.1.1.10 - 0 e reservado para o gatway
+ip nginx 10.0.1.10 - 0 e reservado para o gatway
 
 Configurei o ip estatico via netplan
 sudo systemctl enable --now systemd-networkd
 sudo mkdir -p /etc/netplan
 sudo nano /etc/netplan/99-dmz.yaml
+
+Modulo 2: 
+configurei o postresql.conf para aceitar o ip do 10.0.3.10 (ip do bd)
+configurei o /etc/postgresql/17/main/pg_hba.conf para aceitar apenas conexao vinda exclusivamente do do dmz (10.0.1.10/32)
