@@ -3,16 +3,21 @@ Roteiro de apresentaco
 DMZ: zona delimitadora e uma rede responsavel por expor servicos para redes nao seguras ela e um adicional de seguranca a rede lan
 Ngix: Utilizei o Ngix para ser o dmz, ngix e um servidor http flexivel e com alta performace
 
-Arquvio de conf: /etc/nginx/nginx.conf
-Configurar o ip do nginx
-sudo nginx -s -reload 
-
-ip nginx 10.0.1.10 - 0 e reservado para o gatway
 
 Configurei o ip estatico via netplan
 sudo systemctl enable --now systemd-networkd
 sudo mkdir -p /etc/netplan
 sudo nano /etc/netplan/99-dmz.yaml
+
+Modulo 1 
+Configurei o servidor de aplicacao Nginx:
+    Arquvio de conf: /etc/nginx/nginx.conf
+    Configurar o ip do nginx
+    sudo nginx -s -reload 
+    ip nginx 10.0.1.10 - 0 e reservado para o gatway
+COmecei a fazer a insercao no postgresql:
+
+
 
 Modulo 2: 
 configurei o postresql.conf para aceitar o ip do 10.0.3.10 (ip do bd)
