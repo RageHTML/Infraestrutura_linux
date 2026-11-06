@@ -9,13 +9,47 @@ sudo systemctl enable --now systemd-networkd
 sudo mkdir -p /etc/netplan
 sudo nano /etc/netplan/99-dmz.yaml
 
-Modulo 1 
-Configurei o servidor de aplicacao Nginx:
-    Arquvio de conf: /etc/nginx/nginx.conf
-    Configurar o ip do nginx
-    sudo nginx -s -reload 
-    ip nginx 10.0.1.10 - 0 e reservado para o gatway
-COmecei a fazer a insercao no postgresql:
+Módulo M1: 
+Endereçamento e Roteamento: Configuração estática de interfaces via Netplan,
+systemd-networkd ou NMT (netplan)
+Verificar endereco das redes: ip a
+Verificar a tabela de roteamento: ip route
+Validar configuração do Netplan: sudo netplan status sudo netplan try
+
+Serviço DHCP: Servidor DHCP (ISC DHCP) alocando IPs na
+sub-rede LAN com reservas estáticas de IP para servidores.
+verificar status: sudo systemctl status isc-dhcp-server
+vericar logs: sudo journalctl -u isc-dhcp-server -f
+Verificar o arquivo de concessões ativas: cat /var/lib/dhcp/dhcpd.leases
+
+DNS Interno: Servidor DNS local (Bind9) realizando a resolução
+direta e reversa para o domínio corporativo (ex: empresa.local)
+verificar status: sudo systemctl status bind9
+Validar a sintaxe dos arquivos de configuração e zona:sudo named-checkzone fastservice.local /etc/bind/db.fastservice.local
+
+Módulo M2: 
+Verificar 
+
+Instalação do PostgreSQL 15+, ajustando o postgresql.conf para escutar nas interfaces corretas da DB Zone.
+verificar sudo -u postgres psql -c "SHOW listen_addresses;"
+sudo ss -tlnp | grep 5432
+
+
+Controle de Acesso Fino: Edição do pg_hba.conf para restringir conexões
+exclusivamente para a sub-rede da DMZ / Servidor Web via autenticação MD5
+sudo -u postgres psql -c "SELECT line_number, type, database, user_name, address, auth_method FROM pg_hba_file_rules;"
+
+
+
+Segurança de Borda (Firewall): Implementação via iptables
+garantindo bloquear por padrão (DROP) todo o tráfego não explicitamente
+permitido.
+
+Verificar as políticas padrão: sudo iptables -L -v
+. Verificar se as regras e exceções foram aplicadas: sudo iptables -L -n -v --line-numbers
+
+
+
 
 
 

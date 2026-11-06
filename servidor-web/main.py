@@ -25,7 +25,7 @@ async def carregar_pagina_principal(request: Request):
     )
 
 @app.post("/")
-async def enviar(formulario: FormData):
-
+async def enviar(formulario: FormData): 
     dados = formulario
+    print(f"Recebido: {dados.nome} - {dados.email}")
     return {"mensagem": "Dados recebidos com sucesso!", "nome": dados.nome}
