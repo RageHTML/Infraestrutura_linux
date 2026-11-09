@@ -1,0 +1,28 @@
+== R1: WAN -> DMZ 80/443 ==
+PASS  R1  WAN -> DMZ :80                             esperado=open      obtido=open
+PASS  R1  WAN -> DMZ :443                            esperado=open      obtido=open
+PASS  R1- WAN -> DMZ :8080 (fora da matriz)          esperado=filtered  obtido=filtered
+PASS  R1- WAN -> DMZ :22                             esperado=filtered  obtido=filtered
+== R2: DMZ -> DB 5432 ==
+PASS  R2  DMZ -> DB :5432                            esperado=open      obtido=open
+PASS  R2- DMZ -> DB :22                              esperado=filtered  obtido=filtered
+PASS  R2- DMZ -> Files :445                          esperado=filtered  obtido=filtered
+== R3: LAN -> Files 139/445 ==
+PASS  R3  LAN usuario -> Files :445                  esperado=open      obtido=open
+PASS  R3  LAN usuario -> Files :139                  esperado=open      obtido=open
+PASS  R3- LAN usuario -> Files :22                   esperado=filtered  obtido=filtered
+PASS  R3- LAN usuario -> DB :5432                    esperado=filtered  obtido=filtered
+== R4: LAN admin -> todas as zonas 22 ==
+PASS  R4  Admin -> DMZ :22                           esperado=open      obtido=open
+PASS  R4  Admin -> DB :22                            esperado=open      obtido=open
+PASS  R4  Admin -> Files :22                         esperado=open      obtido=open
+PASS  R4- LAN usuario -> DMZ :22                     esperado=filtered  obtido=filtered
+PASS  R4- LAN usuario -> DB :22                      esperado=filtered  obtido=filtered
+== R5: DMZ/WAN -> DB (DROP) ==
+PASS  R5  WAN -> DB :5432                            esperado=filtered  obtido=filtered
+PASS  R5  WAN -> DB :22                              esperado=filtered  obtido=filtered
+== SSH somente por chave ==
+PASS  SSH com chave entra
+PASS  SSH sem chave recusado
+
+RESULTADO: 20 PASS / 0 FAIL

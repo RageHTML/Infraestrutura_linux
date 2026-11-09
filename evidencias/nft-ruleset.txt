@@ -1,0 +1,20 @@
+table inet projeto {
+	chain input {
+		type filter hook input priority filter; policy drop;
+		iifname "lo" accept
+		ct state established,related accept
+	}
+
+	chain forward {
+		type filter hook forward priority filter; policy drop;
+		ct state invalid counter packets 0 bytes 0 drop
+		ct state established,related counter packets 109 bytes 20691 accept
+		iifname "fw-wan" oifname "fw-dmz" ip daddr 10.0.1.10 tcp dport { 80, 443 } counter packets 2 bytes 120 accept comment "R1 WAN-DMZ web"
+		iifname "fw-dmz" oifname "fw-db" ip saddr 10.0.1.10 ip daddr 10.0.3.10 tcp dport 5432 counter packets 1 bytes 60 accept comment "R2 DMZ-DB postgres"
+		iifname "fw-lan" oifname "fw-files" ip daddr 10.0.4.10 tcp dport { 139, 445 } counter packets 2 bytes 120 accept comment "R3 LAN-Files samba"
+		iifname "fw-lan" ip saddr 10.0.2.5 oifname { "fw-db", "fw-dmz", "fw-files" } tcp dport 22 counter packets 5 bytes 300 accept comment "R4 Admin SSH"
+		iifname { "fw-wan", "fw-dmz" } oifname "fw-db" log prefix "DROP-DB: " counter packets 9 bytes 540 drop comment "R5 DROP banco"
+		limit rate 5/second burst 5 packets log prefix "DROP-OTHER: "
+		counter packets 21 bytes 1260 drop
+	}
+}

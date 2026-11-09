@@ -1,0 +1,15 @@
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    eno1:
+      dhcp4: true
+  dummy-devices:
+    dmz0:
+      addresses: [10.0.1.10/24]
+    dmz1:
+      addresses: [10.0.3.10/24]
+    dmz2:
+      addresses: [10.0.4.10/24]
+    lan0:
+      addresses: [10.0.2.1/24]

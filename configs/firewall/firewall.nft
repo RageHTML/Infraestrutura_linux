@@ -1,0 +1,30 @@
+flush ruleset
+
+table inet projeto {
+
+  chain input {
+    type filter hook input priority 0; policy drop;
+    iifname "lo" accept
+    ct state established,related accept
+  }
+
+  chain forward {
+    type filter hook forward priority 0; policy drop;
+
+    ct state invalid counter drop
+    ct state established,related counter accept
+
+    iifname "fw-wan" oifname "fw-dmz" ip daddr 10.0.1.10 tcp dport { 80, 443 } counter accept comment "R1 WAN-DMZ web"
+
+    iifname "fw-dmz" oifname "fw-db" ip saddr 10.0.1.10 ip daddr 10.0.3.10 tcp dport 5432 counter accept comment "R2 DMZ-DB postgres"
+
+    iifname "fw-lan" oifname "fw-files" ip daddr 10.0.4.10 tcp dport { 139, 445 } counter accept comment "R3 LAN-Files samba"
+
+    iifname "fw-lan" ip saddr 10.0.2.5 oifname { "fw-dmz", "fw-db", "fw-files" } tcp dport 22 counter accept comment "R4 Admin SSH"
+
+    iifname { "fw-dmz", "fw-wan" } oifname "fw-db" log prefix "DROP-DB: " counter drop comment "R5 DROP banco"
+
+    limit rate 5/second log prefix "DROP-OTHER: "
+    counter drop
+  }
+}
