@@ -39,7 +39,13 @@ Controle de Acesso Fino: Edição do pg_hba.conf para restringir conexões
 exclusivamente para a sub-rede da DMZ / Servidor Web via autenticação MD5
 sudo -u postgres psql -c "SELECT line_number, type, database, user_name, address, auth_method FROM pg_hba_file_rules;"
 
+Políticas de Privilégio Mínimo: Separação clara entre superusuários do banco e
+usuários de aplicação sem privilégios administrativos.
+sudo -u postgres psql -P pager=off -d recadastro -c "\du" -c "\dp usuario"
 
+realização diária de pg_dump, compactação em .tar.gz e envio para o Servidor
+de Arquivo
+sudo crontab -u postgres -l; sudo tail -n 3 /var/backups/postgres/backup.log; sudo ls -lh /compartilhado/backups
 
 Segurança de Borda (Firewall): Implementação via iptables
 garantindo bloquear por padrão (DROP) todo o tráfego não explicitamente
