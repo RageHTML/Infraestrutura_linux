@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+
 set -euo pipefail
 
 declare -A SUBNET=( [wan]=10.0.9 [dmz]=10.0.1 [lan]=10.0.2 [db]=10.0.3 [files]=10.0.4 )
@@ -25,7 +25,7 @@ up() {
     ip -n "$z" link set eth0 up
     ip -n "$z" route add default via "$net.1"
   done
-  ip -n lan addr add 10.0.2.5/24 dev eth0   # IP do admin
+  ip -n lan addr add 10.0.2.5/24 dev eth0  
 }
 
 case "${1:-}" in
