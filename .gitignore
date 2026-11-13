@@ -3,4 +3,7 @@ venv
 servidor-web/pyproject.toml
 servidor-web/uv.lock
 servidor-web/.venv
+servidor-web/.env__pycache__/
+*.pyc
+servidor-web/.env
 servidor-web/.env

@@ -1,0 +1,43 @@
+#!/bin/bash
+# Backup diário do PostgreSQL: pg_dump -> .tar.gz -> pasta de backups do servidor de arquivos,
+# com verificação de integridade, rotação e registro em log.
+# Roda no cron do usuário postgres (o dump usa o socket local do PostgreSQL).
+# Uso manual:  sudo -u postgres /usr/local/bin/backup_empresa.sh
+set -euo pipefail
+
+DB="${DB:-banco}"
+DESTINO="${DESTINO:-/compartilhado/backups}"   # armazenamento do servidor de arquivos (compartilhado pelo Samba)
+RETENCAO_DIAS="${RETENCAO_DIAS:-7}"
+LOG="${LOG:-/var/log/backup_empresa.log}"
+
+DATA=$(date +%Y%m%d_%H%M%S)
+ARQ="${DB}_${DATA}"
+TMP=$(mktemp -d)
+
+log() { echo "$(date '+%F %T') $*" >> "$LOG" 2>/dev/null || true; }
+cleanup() { rm -rf "$TMP"; }
+trap cleanup EXIT
+trap 'log "ERRO no backup (linha $LINENO)"' ERR
+
+log "Inicio do backup de $DB"
+
+# O destino precisa aceitar escrita do usuário que executa o script
+if [ ! -w "$DESTINO" ]; then
+  log "ERRO: sem permissão de escrita em $DESTINO (adicione o usuário ao grupo backup_mgr)"
+  exit 1
+fi
+
+# 1. Dump do banco
+pg_dump -d "$DB" -f "$TMP/$ARQ.sql"
+
+# 2. Compactação em .tar.gz e teste de integridade
+tar -czf "$TMP/$ARQ.tar.gz" -C "$TMP" "$ARQ.sql"
+tar -tzf "$TMP/$ARQ.tar.gz" > /dev/null
+
+# 3. Envio ao servidor de arquivos
+cp "$TMP/$ARQ.tar.gz" "$DESTINO/"
+
+# 4. Rotação: remove backups com mais de $RETENCAO_DIAS dias
+find "$DESTINO" -maxdepth 1 -name "${DB}_*.tar.gz" -mtime +"$RETENCAO_DIAS" -print -delete >> "$LOG" 2>/dev/null || true
+
+log "Backup concluido: $ARQ.tar.gz ($(du -h "$DESTINO/$ARQ.tar.gz" | cut -f1))"

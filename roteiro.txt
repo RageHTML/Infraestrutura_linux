@@ -1,0 +1,117 @@
+# Roteiro da Defesa (Atualizado)
+
+## Antes de entrar
+
+10 minutos antes, em dois terminais:
+
+```bash
+# Terminal 1: ambiente
+sudo ./scripts/subir.sh
+sudo bash ./scripts/testes.sh      # deve fechar em 20 PASS / 0 FAIL
+
+# Terminal 2: aplicação (deixe rodando)
+cd servidor-web
+sudo ip netns exec dmz sudo -u "$USER" .venv/bin/uvicorn main:app --host 127.0.0.1 --port 8000
+
+```
+---
+
+## Slide 1: Capa (30 s)
+
+Diga: *"Apresento a infraestrutura de uma startup dividida em zonas de segurança, com firewall central, servidor web, banco e servidor de arquivos. Vou mostrar a arquitetura, a matriz de firewall e quatro demonstrações."*
+
+---
+
+## Slide 2: Arquitetura (1 min 30 s)
+
+Diga que são cinco zonas ligadas a um firewall central. WAN e DMZ são expostas, e LAN, DB e Files são internas. Cada zona é um namespace Linux ligado por `veth` ao namespace do firewall, que roteia e filtra com `nftables`. A política padrão é `drop`: só passa o que a matriz permite. Se perguntarem por que Files é uma zona separada, a resposta é que isolei o servidor de arquivos para ele não herdar o acesso da LAN.
+
+---
+
+## Slide 3: Hosts e endereçamento (1 min)
+
+Percorra a tabela rápido, só pelas zonas. Destaque que o gateway de cada zona é o endereço `.1` no firewall e que o `pc-admin` (`10.0.2.5`) é quem o firewall reconhece como administrador. Uma frase basta.
+
+---
+
+## Slide 4: Matriz de conectividade (2 min)
+
+Leia as regras na ordem. Dê ênfase a dois pontos:
+
+* A R2 libera só o `srv-web` (`10.0.1.10`) na porta 5432, não a DMZ inteira.
+* A R2 vem antes da R5. Se a ordem fosse inversa, o `DROP` do banco pegaria a aplicação também.
+* *(Novo)* **Regra R6:** Adicionada para permitir o tráfego do Servidor de Banco de Dados para o Servidor de Arquivos (porta 445/SMB), viabilizando o backup automatizado nativo.
+
+Termine com a faixa: *"20 testes, 20 aprovados, com teste positivo e negativo por regra."*
+
+---
+
+## Slide 5: Demo 1, HTTPS até o PostgreSQL (2 min 30 s)
+
+Diga: *"O usuário acessa por HTTPS, o Nginx faz proxy para o FastAPI, que só escuta em 127.0.0.1, e a aplicação grava no banco pela 5432."*
+
+```bash
+# a partir da WAN, passando pelo firewall
+sudo ip netns exec wan curl -k https://10.0.1.10/
+
+# conferir o registro gravado
+sudo ip netns exec dmz psql -h 10.0.3.10 -U usuario -d banco -c '\dt'
+
+```
+
+---
+
+## Slide 6: Demo 2, bloqueio no banco (2 min 30 s)
+
+```bash
+sudo ip netns exec wan nc -zv -w 3 10.0.3.10 5432      # timeout
+sudo ip netns exec dmz nc -zv -w 3 10.0.3.10 22        # timeout
+sudo journalctl -k | grep DROP-DB | tail -3
+
+```
+
+Explique que o resultado é timeout, não *refused*, comprovando o `DROP`. Mostre o log com o prefixo `DROP-DB` como evidência.
+
+---
+
+## Slide 7: Demo 3, Samba e Cotas (2 min 30 s) *(Agora 100% funcional)*
+
+Diga: *"O servidor de arquivos implementa grupos POSIX segregados (`devs`, `mkt`, `diretoria`, `backup_mgr`), pastas dedicadas e cotas de disco restritivas."*
+
+```bash
+# Testar acesso à pasta pública e de projetos a partir da LAN
+sudo ip netns exec lan smbclient //10.0.4.10/publico -N -c ls
+sudo ip netns exec lan smbclient //10.0.4.10/projetos -U aluno1%senha -c ls
+
+```
+
+Explique rapidamente que o acesso é validado por grupos POSIX no backend do Samba e que o volume possui cotas ativas no sistema de arquivos para evitar estouro de espaço.
+
+---
+
+## Slide 8: Demo 4, Backup Automatizado (2 min 30 s) *(Agora 100% funcional)*
+
+Diga: *"O backup é executado de forma autônoma pelo cron do banco de dados, realizando o dump, compactação e envio direto para o repositório centralizado no servidor de arquivos (via R6)."*
+
+```bash
+# Executar manualmente o script de backup para demonstração
+sudo ip netns exec db /usr/local/bin/backup_empresa.sh
+
+# Conferir o arquivo gerado no share do servidor de arquivos
+sudo ip netns exec lan smbclient //10.0.4.10/backups -U backupuser%senha -c ls
+
+```
+
+Explique o agendamento no `cron` (`0 2 * * *`) e que a arquitetura respeita o fluxo seguro entre os segmentos de rede.
+
+---
+
+## Slide 9: Segurança (1 min 30 s)
+
+Fale em duas partes. Primeiro o que protege: zonas, drop por padrão, banco com três travas independentes (firewall, `pg_hba.conf` e bind por IP), SSH só por chave, TLS e limite de requisições. Depois as limitações, com honestidade: namespaces compartilham kernel e usuários, o admin é identificado por IP (que pode ser forjado dentro da LAN) e o certificado é autoassinado.
+
+---
+
+## Slide 10: Encerramento (30 s)
+
+Resuma: cinco zonas, 20 de 20 testes e o bloqueio ao banco comprovado em log. Cite os próximos passos (VPN para o admin, CA confiável, IDS) e abra para perguntas.
